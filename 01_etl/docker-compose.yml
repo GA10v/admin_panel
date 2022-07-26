@@ -45,7 +45,35 @@ services:
       - db
     ports:
       - 80:80
-    
+
+  redis:
+    container_name: admin_panel_redis
+    restart: always
+    image: redis:7.0.4
+    ports:
+      - 6379:6379
+  
+  etl:
+    container_name: admin_panel_etl
+    restart: always
+    build:
+        context: .
+        dockerfile: ./postgres_to_es/Dockerfile
+    env_file: .env
+    depends_on:
+      - app
+      - db
+
+  elasticsearch:
+    container_name: admin_panel_elastic
+    restart: always
+    image: elasticsearch:8.3.2
+    environment:
+      - 'discovery.type=single-node'
+      - 'ES_JAVA_OPTS="-Xms200m -Xmx200m"'
+      - 'xpack.security.enabled=false'
+    ports:
+      - "9200:9200"
 
 volumes:
   static:
