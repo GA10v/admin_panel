@@ -28,7 +28,6 @@ def pg_conn_context(dsl: models_pg.DBConf, cursor_factory=DictCursor) -> _connec
         yield conn
     except psycopg2.Error as er:
         logging.error(er)
-        raise er
     finally:
         conn.close()
 
