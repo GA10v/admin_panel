@@ -12,21 +12,25 @@ class PostgresExtractor:
         self.connection = connection
         self.batch_size = batch_size
 
-    def get_data(self, last_update_time: datetime) -> Generator[list, None, None]:
+    def get_data(self, last_update_time: datetime, query: str) -> Generator[list, None, None]:
         """
         Получение данных из PostgreSQL.
 
         Args:
             last_update_time: Время последнего обновления данных
+            query: Запрос к PostgreSQL
 
         Yields:
-            Generator: Список кортежей с данными из PostgreSQL
+            Generator: Список словарей с данными из PostgreSQL
         """
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute(constants.SQL_QUERY % last_update_time)
 
-                while pg_data := cursor.fetchmany(self.batch_size):
+                desc = cursor.description
+                column_names = [col[0] for col in desc]
+
+                while pg_data := [dict(zip(column_names, row)) for row in cursor.fetchmany(self.batch_size)]:
                     yield pg_data
         except Exception as er:
             logging.error(er)
