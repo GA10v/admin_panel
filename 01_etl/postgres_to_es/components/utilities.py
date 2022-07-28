@@ -5,7 +5,7 @@ import psycopg2
 from psycopg2.extensions import connection as _connection
 from psycopg2.extras import DictCursor
 
-from components import log_config, models_pg
+from components import log_config, models
 from functools import wraps
 import time
 
@@ -13,7 +13,7 @@ log_config.get_log()
 
 
 @contextmanager
-def pg_conn_context(dsl: models_pg.DBConf, cursor_factory=DictCursor) -> _connection:
+def pg_conn_context(dsl: models.DBConf, cursor_factory=DictCursor) -> _connection:
     """Контекстный менеджер для psql.
 
     Args:
@@ -28,6 +28,7 @@ def pg_conn_context(dsl: models_pg.DBConf, cursor_factory=DictCursor) -> _connec
         yield conn
     except psycopg2.Error as er:
         logging.error(er)
+        raise er
     finally:
         conn.close()
 
