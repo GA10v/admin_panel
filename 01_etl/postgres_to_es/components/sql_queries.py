@@ -2,6 +2,7 @@ from . import constants
 from typing import Generator
 import datetime
 
+
 def get_query(last_update_time: datetime) -> Generator[str, None, None]:
     for table in constants.PG_MODELS:
         query = f"""SELECT
@@ -58,5 +59,4 @@ SQL_QUERY = """
     WHERE fw.id IN (%s)
     GROUP BY fw.id
     ORDER BY modified
-    LIMIT 100;
 """
