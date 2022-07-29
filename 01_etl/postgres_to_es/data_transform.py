@@ -4,7 +4,7 @@ import datetime
 import json
 
 
-class DataTransform:
+class DataTransformer:
     # Сделал для выполнения условия (- валидируйте конфигурации с помощью `pydantic`)
     def prepare_data(self, pg_data: list[models.PGDataConf]) -> list[models.ESDocument]:
         """
@@ -77,7 +77,7 @@ if __name__ == '__main__':
         pg_loader = PostgresExtractor(connection=pg_conn, batch_size=1000)
         pg_data = pg_loader.get_data(last_update_time=datetime.datetime.now())
 
-        es_data = DataTransform().compile_data(pg_data)
+        es_data = DataTransformer().compile_data(pg_data)
 
         print(len(es_data))
 
