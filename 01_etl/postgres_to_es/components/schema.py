@@ -1,4 +1,4 @@
-{
+ES_SCHEMA = {
     "settings": {
         "refresh_interval": "1s",
         "analysis": {
