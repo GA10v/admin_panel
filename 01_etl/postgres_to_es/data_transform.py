@@ -1,6 +1,5 @@
-from components import models, utilities, constants
+from components import models, utilities, constants, state
 from pg_extractor import PostgresExtractor
-import datetime
 import json
 
 
@@ -8,17 +7,18 @@ class DataTransformer:
     # Сделал для выполнения условия (- валидируйте конфигурации с помощью `pydantic`)
     def prepare_data(self, pg_data: list[models.PGDataConf]) -> list[models.ESDocument]:
         """
-        Подготовка данных из PostgreSQL к отправки в Elasticserch
+        Подготовка данных из PostgreSQL к отправки в Elasticserch.
 
         Args:
-            pg_data: Список словарей с данными из PostgreSQL
+            pg_data: Список словарей с данными из PostgreSQL.
 
         Returns:
-            es_data: Список объектов модели ESDocument
+            es_data: Список объектов модели ESDocument.
         """
 
         self.pg_data = [x for x in pg_data][0]
         es_data = []
+        dates = []
         for item in self.pg_data:
             entry = models.ESDocument(
                 id=item.get('id'),
@@ -32,29 +32,26 @@ class DataTransformer:
                 actors=item.get('actors'),
                 writers=item.get('writers'),
             )
+            update_time = item.get('modified')
             es_data.append(entry)
+            dates.append(update_time)
+        self.last_update_time = max(dates)
         return es_data
 
-    def compile_data(self, pg_data: list[models.PGDataConf]) -> list[dict]:
+    def compile_data(self, pg_data: list[models.PGDataConf]) -> list[models.ESDataConf]:
         """
-        Подготовка bulk для загрузки в Elasticserch
+        Подготовка bulk для загрузки в Elasticserch.
 
         Args:
-            pg_data: Список словарей с данными из PostgreSQL
+            pg_data: Список словарей с данными из PostgreSQL.
 
         Returns:
-            bulk: Список словарей для загрузки в Elasticserch
+            bulk: Список словарей для загрузки в Elasticserch.
         """
 
         entries = self.prepare_data(pg_data)
         bulk = []
         for entry in entries:
-            index = {
-                'index': {
-                    '_index': constants.ES_INDEX,
-                    '_id': str(entry.id)
-                }
-            }
             document = {
                 'id': str(entry.id),
                 'imdb_rating': entry.imdb_rating,
@@ -67,19 +64,22 @@ class DataTransformer:
                 'actors': entry.actors,
                 'writers': entry.writers,
             }
-            bulk.append(index)
             bulk.append(document)
         return bulk
 
 
 if __name__ == '__main__':
+    storage = state.JsonFileStorage(constants.STATE_FILE)
+    state_maneger = state.State(storage)
     with utilities.pg_conn_context(constants.DSL_PG) as pg_conn:
-        pg_loader = PostgresExtractor(connection=pg_conn, batch_size=1000)
-        pg_data = pg_loader.get_data(last_update_time=datetime.datetime.now())
-
-        es_data = DataTransformer().compile_data(pg_data)
-
-        print(len(es_data))
-
-        with open('2.json', 'w') as f:
-            json.dump(es_data, f, indent=4, ensure_ascii=False)
+        pg_loader = PostgresExtractor(
+            connection=pg_conn, state_maneger=state_maneger, batch_size=100)
+        pg_data = [x for x in pg_loader.get_data()]
+        if pg_data:
+            es_data = DataTransformer().compile_data(
+                pg_data=pg_data)
+            print(len(es_data))
+            with open('2.json', 'w') as f:
+                json.dump(es_data, f, indent=4, ensure_ascii=False)
+        else:
+            print('no data')
