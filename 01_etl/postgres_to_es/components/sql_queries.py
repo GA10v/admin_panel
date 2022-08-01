@@ -12,7 +12,7 @@ def get_query(last_update_time: datetime) -> Generator[str, None, None]:
                     LEFT JOIN content.person ON content.person.id = pfw.person_id
                     LEFT JOIN content.genre_film_work gfw ON gfw.film_work_id = content.film_work.id
                     LEFT JOIN content.genre ON content.genre.id = gfw.genre_id
-                    WHERE content.{table}.modified < '{last_update_time}'
+                    WHERE content.{table}.modified > '{last_update_time}'
                     GROUP BY content.film_work.id;"""
         yield query
 
