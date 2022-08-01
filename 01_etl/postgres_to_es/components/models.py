@@ -31,7 +31,25 @@ class PGDataConf(TypedDict):
     genres: list[str]
 
 
+class ESDataConf(TypedDict):
+    """TypedDict."""
+
+    id: str
+    title: str
+    description: str
+    imdb_rating: float
+    type: str
+    director: str
+    actors_names: list[str] | list
+    writers_names: list[str] | list
+    actors: list[dict] | list
+    writers: list[dict] | list
+    genres: list[str]
+
+
 class ESDocument(BaseModel):
+    """ Валидация данных для Elasticsearch. """
+    
     id: UUID
     imdb_rating: Optional[float]
     genre: Optional[List]
