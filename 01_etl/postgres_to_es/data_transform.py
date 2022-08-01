@@ -1,4 +1,4 @@
-from components import models, utilities, constants, state
+from components import models, constants, state
 from pg_extractor import PostgresExtractor
 import json
 
@@ -66,20 +66,21 @@ class DataTransformer:
             }
             bulk.append(document)
         return bulk
+    
+    def get_last_update_time(self) -> str:
+        return self.last_update_time
 
 
 if __name__ == '__main__':
     storage = state.JsonFileStorage(constants.STATE_FILE)
     state_maneger = state.State(storage)
-    with utilities.pg_conn_context(constants.DSL_PG) as pg_conn:
-        pg_loader = PostgresExtractor(
-            connection=pg_conn, state_maneger=state_maneger, batch_size=100)
-        pg_data = [x for x in pg_loader.get_data()]
-        if pg_data:
-            es_data = DataTransformer().compile_data(
+    extractor = PostgresExtractor(dsl=constants.DSL_PG, state_maneger=state_maneger, batch_size=10000)
+    pg_data = [x for x in extractor.get_data()]
+    if pg_data:
+        es_data = DataTransformer().compile_data(
                 pg_data=pg_data)
-            print(len(es_data))
-            with open('2.json', 'w') as f:
-                json.dump(es_data, f, indent=4, ensure_ascii=False)
-        else:
-            print('no data')
+        print(len(es_data))
+        with open('2.json', 'w') as f:
+            json.dump(es_data, f, indent=4, ensure_ascii=False)
+    else:
+        print('no data')
