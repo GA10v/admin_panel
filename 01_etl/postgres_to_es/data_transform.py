@@ -52,6 +52,12 @@ class DataTransformer:
         entries = self.prepare_data(pg_data)
         bulk = []
         for entry in entries:
+            index = {
+                'index': {
+                    '_index': constants.ES_INDEX,
+                    '_id': str(entry.id)
+                }
+            }
             document = {
                 'id': str(entry.id),
                 'imdb_rating': entry.imdb_rating,
@@ -64,7 +70,9 @@ class DataTransformer:
                 'actors': entry.actors,
                 'writers': entry.writers,
             }
-            bulk.append(document)
+            bulk.append(json.dumps(index))
+            bulk.append(json.dumps(document))
+        bulk = '\n'.join(bulk) + '\n'
         return bulk
     
     def get_last_update_time(self) -> str:
@@ -74,7 +82,7 @@ class DataTransformer:
 if __name__ == '__main__':
     storage = state.JsonFileStorage(constants.STATE_FILE)
     state_maneger = state.State(storage)
-    extractor = PostgresExtractor(dsl=constants.DSL_PG, state_maneger=state_maneger, batch_size=10000)
+    extractor = PostgresExtractor(dsl=constants.DSL_PG, state_maneger=state_maneger, batch_size=1)
     pg_data = [x for x in extractor.get_data()]
     if pg_data:
         es_data = DataTransformer().compile_data(

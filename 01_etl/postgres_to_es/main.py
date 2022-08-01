@@ -6,7 +6,7 @@ import time
 import logging
 
 
-def main(time_to_sleep: int = 2, batch_size: int = 10) -> None:
+def main(time_to_sleep: int = 2, batch_size: int = 100) -> None:
     log_config.get_log()
     storage = state.JsonFileStorage(constants.STATE_FILE)
     state_maneger = state.State(storage)

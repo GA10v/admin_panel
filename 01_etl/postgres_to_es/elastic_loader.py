@@ -1,5 +1,4 @@
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers import bulk as _bulk
 import logging
 from components import log_config, state, constants, schema, models
 from pg_extractor import PostgresExtractor
@@ -49,7 +48,6 @@ class ESLoader:
             self.connection.indices.create(index=self.index_name, body=body)
         except Exception as er:
             logging.error(er)
-            # raise er
 
     def push_bulk(self, bulk: list[models.ESDataConf], last_update_time: str) -> None:
         """
@@ -62,14 +60,13 @@ class ESLoader:
 
         try:
             self.check_connection()
-            _bulk(self.connection, actions=bulk, index=self.index_name)
+            self.connection.bulk(operations=bulk, index=self.index_name)
             logging.info('Данные успешно обновлены')
             self.state_maneger.set_state(
                 key=constants.STATE_KEY, value=last_update_time)
             logging.info(f'Дата последнего обновления данных: {last_update_time}')
         except Exception as er:
             logging.error(er)
-            # raise er
 
 
 if __name__ == '__main__':
