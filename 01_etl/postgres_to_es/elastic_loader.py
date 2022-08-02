@@ -70,7 +70,8 @@ class ESLoader:
 
 
 if __name__ == '__main__':
-    storage = state.JsonFileStorage(constants.STATE_FILE)
+    # storage = state.JsonFileStorage(constants.STATE_FILE)
+    storage = state.RedisStorage()
     state_maneger = state.State(storage)
     es_conn = Elasticsearch(constants.ES_URL)
     transformer = DataTransformer()
@@ -80,7 +81,7 @@ if __name__ == '__main__':
     if not es_conn.indices.exists(index=constants.ES_INDEX):
         loader.push_index()
 
-    extractor = PostgresExtractor(dsl=constants.DSL_PG, state_maneger=state_maneger, batch_size=100)
+    extractor = PostgresExtractor(dsl=constants.DSL_PG, state_maneger=state_maneger, batch_size=10)
     pg_data = [x for x in extractor.get_data()]
     if pg_data:
         bulk = transformer.compile_data(pg_data=pg_data)

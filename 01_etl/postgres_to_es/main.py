@@ -8,7 +8,8 @@ import logging
 
 def main(time_to_sleep: int = 2, batch_size: int = 100) -> None:
     log_config.get_log()
-    storage = state.JsonFileStorage(constants.STATE_FILE)
+    # storage = state.JsonFileStorage(constants.STATE_FILE)
+    storage = state.RedisStorage()
     state_maneger = state.State(storage)
     extractor = PostgresExtractor(
         dsl=constants.DSL_PG, state_maneger=state_maneger, batch_size=batch_size)

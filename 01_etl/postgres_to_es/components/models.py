@@ -1,7 +1,8 @@
 from typing import TypedDict
 from uuid import UUID
+
 from pydantic import BaseModel, validator
-from pydantic.schema import Optional, List
+from pydantic.schema import List, Optional
 
 
 class DBConf(TypedDict):
@@ -12,6 +13,14 @@ class DBConf(TypedDict):
     user: str
     password: str
     port: str
+
+
+class RedisConf(TypedDict):
+    """TypedDict."""
+
+    host: str
+    port: int
+    db: int
 
 
 class PGDataConf(TypedDict):
