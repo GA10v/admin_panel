@@ -24,7 +24,7 @@ services:
         dockerfile: ./app/Dockerfile
     env_file: .env
     volumes:
-      - ./app/logs:/app/logs
+      - ./logs:/app/logs
       - static:/app/data/static
       - media:/app/data/media
     depends_on:
@@ -60,17 +60,20 @@ services:
         context: .
         dockerfile: ./postgres_to_es/Dockerfile
     env_file: .env
+    volumes:
+      - ./logs:/etl/logs
+      - ./postgres_to_es/data:/etl/data
     depends_on:
       - app
       - db
+      - elasticsearch
 
   elasticsearch:
     container_name: admin_panel_elastic
     restart: always
-    image: elasticsearch:8.3.2
+    image: elasticsearch:7.17.5
     environment:
       - 'discovery.type=single-node'
-      - 'ES_JAVA_OPTS="-Xms200m -Xmx200m"'
       - 'xpack.security.enabled=false'
     ports:
       - "9200:9200"
