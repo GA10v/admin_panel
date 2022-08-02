@@ -57,8 +57,8 @@ class ESDataConf(TypedDict):
 
 
 class ESDocument(BaseModel):
-    """ Валидация данных для Elasticsearch. """
-    
+    """Валидация данных для Elasticsearch."""
+
     id: UUID
     imdb_rating: Optional[float]
     genre: Optional[List]
@@ -71,31 +71,76 @@ class ESDocument(BaseModel):
     writers: List
 
     @validator('imdb_rating')
-    def valid_imdb_rating(cls, value):
+    @classmethod
+    def valid_imdb_rating(cls, value) -> float:
+        """Валидация поля imdb_rating.
+
+        Args:
+            value: Сырые данныме из PostgreSQL.
+
+        Returns:
+            value: Приведенные данныме к формату модели ESDocument.
+        """
         if value is None:
             return 0.0
         return value
 
     @validator('description')
-    def valid_description(cls, value):
+    @classmethod
+    def valid_description(cls, value) -> str:
+        """Валидация поля description.
+
+        Args:
+            value: Сырые данныме из PostgreSQL.
+
+        Returns:
+            value: Приведенные данныме к формату модели ESDocument.
+        """
         if value is None:
             return ''
         return value
 
     @validator('director')
-    def valid_director(cls, value):
+    @classmethod
+    def valid_director(cls, value) -> str:
+        """Валидация поля director.
+
+        Args:
+            value: Сырые данныме из PostgreSQL.
+
+        Returns:
+            value: Приведенные данныме к формату модели ESDocument.
+        """
         if value is None:
             return ''
         return value
 
     @validator('actors_names')
-    def valid_actors_names(cls, value):
+    @classmethod
+    def valid_actors_names(cls, value) -> list:
+        """Валидация поля actors_names.
+
+        Args:
+            value: Сырые данныме из PostgreSQL.
+
+        Returns:
+            value: Приведенные данныме к формату модели ESDocument.
+        """
         if value is None:
             return []
         return value
 
     @validator('writers_names')
-    def valid_writers_names(cls, value):
+    @classmethod
+    def valid_writers_names(cls, value) -> list:
+        """Валидация поля writers_names.
+
+        Args:
+            value: Сырые данныме из PostgreSQL.
+
+        Returns:
+            value: Приведенные данныме к формату модели ESDocument.
+        """
         if value is None:
             return []
         return value

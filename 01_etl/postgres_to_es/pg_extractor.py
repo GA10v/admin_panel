@@ -1,22 +1,26 @@
 import datetime
-from psycopg2.extensions import connection as _connection
-from components import log_config, constants, sql_queries, models, state
-from components.utilities import backoff
 import logging
+from contextlib import contextmanager
 from typing import Generator
-import json
-from components.state import State
 
 import psycopg2
 from psycopg2.extensions import connection as _connection
 from psycopg2.extras import DictCursor
-from contextlib import contextmanager
+
+from components import constants, log_config, models, sql_queries
+from components.state import State
+from components.utilities import backoff
 
 log_config.get_log()
 
 
 class PostgresExtractor:
-    def __init__(self, dsl: models.DBConf, state_maneger: State, batch_size: int = 100, cursor_factory=DictCursor) -> None:
+    def __init__(
+        self,
+        dsl: models.DBConf,
+        state_maneger: State,
+        batch_size: int = 100,
+        cursor_factory=DictCursor) -> None:
         """
         Args:
             dsl: Данные для подключения к psql.
@@ -31,31 +35,36 @@ class PostgresExtractor:
 
     @backoff()
     def get_connection(self) -> _connection:
-        """ Реализация отказоустойчивости.
+        """
+        Реализация отказоустойчивости.
 
         Returns:
-            _connection: Конектор.      
+            _connection: Конектор.
         """
         return psycopg2.connect(**self.dsl, cursor_factory=self.cursor_factory)
 
     @contextmanager
     def get_pg_conn(self) -> _connection:
-        """Контекстный менеджер для psql.
+        """
+        Контекстный менеджер для psql.
 
         Yields:
-            _connection: Конектор
+            _connection: Конектор.
         """
         try:
             conn = self.get_connection()
             yield conn
-        # except psycopg2.Error as er:
-        #     logging.error(er)
-        #     raise er
+        # except обрабатывает @backoff() в self.get_connection()
         finally:
             conn.close()
 
     def get_last_update_time(self) -> datetime:
-        """Получение времени последнего обновления данных."""
+        """
+        Получение времени последнего обновления данных.
+
+        Returns:
+            last_check: Дата последнего обновления данных.
+        """
         try:
             last_check = self.state_maneger.get_state(constants.STATE_KEY)
             return datetime.datetime.strptime(last_check[:-3], '%Y-%m-%d %H:%M:%S.%f')
@@ -63,8 +72,7 @@ class PostgresExtractor:
         except (TypeError, ValueError):
             logging.warning('Отсутсвует файл с данными о последнем состоянии')
             last_check = '2021-01-01 00:0:00.000001'
-            self.state_maneger.set_state(
-                key=constants.STATE_KEY, value=last_check)
+            self.state_maneger.set_state(key=constants.STATE_KEY, value=last_check)
             return datetime.datetime.strptime(last_check, '%Y-%m-%d %H:%M:%S.%f')
 
     def get_id(self) -> set:
@@ -80,7 +88,7 @@ class PostgresExtractor:
                 with self.get_pg_conn() as connection, connection.cursor() as cursor:
                     cursor.execute(query)
                     pg_data = cursor.fetchall()
-                    ids.append((str(x[0]) for x in pg_data))
+                    ids.append((str(item[0]) for item in pg_data))
             result = set(ids[0])
             return result
         except Exception as er:
@@ -91,7 +99,7 @@ class PostgresExtractor:
         Получение данных из PostgreSQL.
 
         Yields:
-            Generator: Список словарей с данными из PostgreSQL
+            Generator: Список словарей с данными из PostgreSQL.
         """
         try:
             ids = [id for id in self.get_id()]
@@ -105,13 +113,3 @@ class PostgresExtractor:
                     yield pg_data
         except Exception as er:
             logging.error(er)
-
-
-if __name__ == '__main__':
-    storage = state.JsonFileStorage(constants.STATE_FILE)
-    state_maneger = state.State(storage)
-    extractor = PostgresExtractor(dsl=constants.DSL_PG, state_maneger=state_maneger, batch_size=10000)
-    data = [x for x in extractor.get_data()][0]
-    print(len(data))
-    with open('1.json', 'w') as f:
-        json.dump(data, f, indent=4)

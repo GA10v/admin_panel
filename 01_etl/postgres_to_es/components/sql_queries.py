@@ -1,13 +1,25 @@
-from . import constants
-from typing import Generator
 import datetime
+from typing import Generator
+
+from . import constants
 
 
 def get_query(last_update_time: datetime) -> Generator[str, None, None]:
+    """
+    Функция собирает qsl запросы для таблиц 'film_work', 'person', 'genre'.
+
+    Результат поиска - список film_work.id
+
+    Args:
+        last_update_time: Начальное время повтора.
+
+    Yields:
+        query: Генератор qsl запросов.
+    """
     for table in constants.PG_MODELS:
         query = f"""SELECT
                     content.film_work.id
-                    FROM content.film_work 
+                    FROM content.film_work
                     LEFT JOIN content.person_film_work pfw ON pfw.film_work_id = content.film_work.id
                     LEFT JOIN content.person ON content.person.id = pfw.person_id
                     LEFT JOIN content.genre_film_work gfw ON gfw.film_work_id = content.film_work.id

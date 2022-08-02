@@ -5,24 +5,24 @@ ES_SCHEMA = {
             "filter": {
                 "english_stop": {
                     "type": "stop",
-                    "stopwords": "_english_"
+                    "stopwords": "_english_",
                 },
                 "english_stemmer": {
                     "type": "stemmer",
-                    "language": "english"
+                    "language": "english",
                 },
                 "english_possessive_stemmer": {
                     "type": "stemmer",
-                    "language": "possessive_english"
+                    "language": "possessive_english",
                 },
                 "russian_stop": {
                     "type": "stop",
-                    "stopwords": "_russian_"
+                    "stopwords": "_russian_",
                 },
                 "russian_stemmer": {
                     "type": "stemmer",
-                    "language": "russian"
-                }
+                    "language": "russian",
+                },
             },
             "analyzer": {
                 "ru_en": {
@@ -33,75 +33,75 @@ ES_SCHEMA = {
                         "english_stemmer",
                         "english_possessive_stemmer",
                         "russian_stop",
-                        "russian_stemmer"
-                    ]
-                }
-            }
-        }
+                        "russian_stemmer",
+                    ],
+                },
+            },
+        },
     },
     "mappings": {
         "dynamic": "strict",
         "properties": {
             "id": {
-                "type": "keyword"
+                "type": "keyword",
             },
             "imdb_rating": {
-                "type": "float"
+                "type": "float",
             },
             "genre": {
-                "type": "keyword"
+                "type": "keyword",
             },
             "title": {
                 "type": "text",
                 "analyzer": "ru_en",
                 "fields": {
                     "raw": {
-                        "type": "keyword"
-                    }
-                }
+                        "type": "keyword",
+                    },
+                },
             },
             "description": {
                 "type": "text",
-                "analyzer": "ru_en"
+                "analyzer": "ru_en",
             },
             "director": {
                 "type": "text",
-                "analyzer": "ru_en"
+                "analyzer": "ru_en",
             },
             "actors_names": {
                 "type": "text",
-                "analyzer": "ru_en"
+                "analyzer": "ru_en",
             },
             "writers_names": {
                 "type": "text",
-                "analyzer": "ru_en"
+                "analyzer": "ru_en",
             },
             "actors": {
                 "type": "nested",
                 "dynamic": "strict",
                 "properties": {
                     "id": {
-                        "type": "keyword"
+                        "type": "keyword",
                     },
                     "name": {
                         "type": "text",
-                        "analyzer": "ru_en"
-                    }
-                }
+                        "analyzer": "ru_en",
+                    },
+                },
             },
             "writers": {
                 "type": "nested",
                 "dynamic": "strict",
                 "properties": {
                     "id": {
-                        "type": "keyword"
+                        "type": "keyword",
                     },
                     "name": {
                         "type": "text",
-                        "analyzer": "ru_en"
-                    }
-                }
-            }
-        }
-    }
+                        "analyzer": "ru_en",
+                    },
+                },
+            },
+        },
+    },
 }

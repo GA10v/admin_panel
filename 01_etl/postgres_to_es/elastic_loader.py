@@ -1,8 +1,8 @@
-from elasticsearch import Elasticsearch
 import logging
-from components import log_config, state, constants, schema, models
-from pg_extractor import PostgresExtractor
-from data_transform import DataTransformer
+
+from elasticsearch import Elasticsearch
+
+from components import constants, log_config, models, schema
 from components.state import State
 from components.utilities import backoff
 
@@ -27,21 +27,19 @@ class ESLoader:
         """ Реализация отказоустойчивости.
 
         Returns:
-            Elasticsearch: Объект класса Elasticsearch, конектор.      
+            Elasticsearch: Объект класса Elasticsearch, конектор.
         """
         return Elasticsearch(self.dsl)
 
     @backoff()
     def check_connection(self) -> None:
         """Проверка связи с сервером Elasticsearch."""
-
         if not self.connection.ping():
             logging.error('Нет связи с сервером Elasticsearch')
             raise
 
     def push_index(self) -> None:
         """Отправка индекса в Elasticsearch."""
-
         body = schema.ES_SCHEMA
         try:
             self.check_connection()
@@ -57,36 +55,11 @@ class ESLoader:
             bulk: Список словарей для загрузки в Elasticserch.
             last_update_time: Время последнего обновления данных.
         """
-
         try:
             self.check_connection()
             self.connection.bulk(operations=bulk, index=self.index_name)
             logging.info('Данные успешно обновлены')
-            self.state_maneger.set_state(
-                key=constants.STATE_KEY, value=last_update_time)
+            self.state_maneger.set_state(key=constants.STATE_KEY, value=last_update_time)
             logging.info(f'Дата последнего обновления данных: {last_update_time}')
         except Exception as er:
             logging.error(er)
-
-
-if __name__ == '__main__':
-    # storage = state.JsonFileStorage(constants.STATE_FILE)
-    storage = state.RedisStorage()
-    state_maneger = state.State(storage)
-    es_conn = Elasticsearch(constants.ES_URL)
-    transformer = DataTransformer()
-    loader = ESLoader(constants.ES_URL, constants.ES_INDEX, state_maneger)
-    es_conn = loader.connection
-
-    if not es_conn.indices.exists(index=constants.ES_INDEX):
-        loader.push_index()
-
-    extractor = PostgresExtractor(dsl=constants.DSL_PG, state_maneger=state_maneger, batch_size=10)
-    pg_data = [x for x in extractor.get_data()]
-    if pg_data:
-        bulk = transformer.compile_data(pg_data=pg_data)
-        last_update_time = transformer.last_update_time
-        print(last_update_time)
-        loader.push_bulk(bulk=bulk, last_update_time=last_update_time)
-    else:
-        print('no data')

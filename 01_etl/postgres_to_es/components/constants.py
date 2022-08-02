@@ -34,5 +34,5 @@ DSL_ES = {
 DSL_REDIS = {
     'host': os.environ.get('REDIS_HOST'),
     'port': int(os.environ.get('REDIS_PORT')),
-    # 'db': os.environ.get('REDIS_DB'),
+    'db': os.environ.get('REDIS_DB'),
 }

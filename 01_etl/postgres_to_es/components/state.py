@@ -1,17 +1,21 @@
 import abc
-from asyncio import constants
 import json
 from typing import Optional
-from .utilities import backoff
-from . import constants, models
 
 from redis import Redis
+
+from . import constants, models
+from .utilities import backoff
 
 
 class BaseStorage:
     @abc.abstractmethod
     def save_state(self, state: dict) -> None:
-        """Сохранить состояние в постоянное хранилище."""
+        """Сохранить состояние в постоянное хранилище.
+
+        Args:
+            state: Cостояние.
+        """
         pass
 
     @abc.abstractmethod
@@ -23,15 +27,15 @@ class BaseStorage:
 class JsonFileStorage(BaseStorage):
     def __init__(self, file_path: Optional[str] = None):
         """
-        Args:        
-        file_path: Путь к файлу.
+        Args:
+            file_path: Путь к файлу '*.json'.
         """
         self.file_path = file_path
 
     def save_state(self, state: dict) -> None:
         """Сохранить состояние в постоянное хранилище.
 
-        Args:        
+        Args:
             state: Cостояние.
         """
         with open(self.file_path, 'w', encoding='utf-8') as file:
@@ -40,7 +44,7 @@ class JsonFileStorage(BaseStorage):
     def retrieve_state(self) -> dict:
         """Загрузить состояние локально из постоянного хранилища.
 
-        Returns: 
+        Returns:
             state: Cостояние.
         """
         try:
@@ -58,8 +62,8 @@ class RedisStorage(BaseStorage):
     def __init__(self, dsl: models.RedisConf = constants.DSL_REDIS, key: str = constants.REDIS_KEY):
         """
         Args:
-            redis_adapter: Клиент для работы с Redis.
-            key: Ключ.        
+            dsl: Данные для подключения к Redis.
+            key: Ключ для Redis.
         """
         self.dsl = dsl
         self.key = key
@@ -67,10 +71,10 @@ class RedisStorage(BaseStorage):
 
     @backoff()
     def get_connection(self) -> Redis:
-        """ Реализация отказоустойчивости.
+        """Реализация отказоустойчивости.
 
         Returns:
-            Redis: Объект класса Redis, конектор.      
+            Redis: Конектор.
         """
         return Redis(**self.dsl, decode_responses=True)
 
@@ -78,18 +82,19 @@ class RedisStorage(BaseStorage):
         """Сохранить состояние в Redis.
 
         Args:
-            state: Cостояние.        
+            state: Cостояние.
         """
         if state:
             self.connection.hset(self.key, mapping=state)
-            # key = [_ for _ in state][0]
-            # value = state.get(key)
-            # self.connection.hset(key=key, value=value)
         else:
             self.connection.delete(self.key)
 
     def retrieve_state(self) -> dict:
-        """Загрузить состояние из Redis."""
+        """Загрузить состояние из Redis.
+
+        Returns:
+            state: Cостояние.
+        """
         try:
             return self.connection.hgetall(self.key)
         except Exception:
@@ -97,13 +102,11 @@ class RedisStorage(BaseStorage):
 
 
 class State:
-    """
-    Класс для хранения состояния при работе с данными.
-    """
+    """Класс для хранения состояния при работе с данными."""
 
     def __init__(self, storage: BaseStorage):
         """
-        Args:        
+        Args:
             storage: Объект класса JsonFileStorage | RedisFileStorage.
         """
         self.storage = storage
@@ -112,7 +115,7 @@ class State:
     def set_state(self, key: str, value: str) -> None:
         """Установить состояние для определённого ключа.
 
-        Args:        
+        Args:
             key: Ключ.
             value: Состояние.
         """
@@ -121,7 +124,10 @@ class State:
     def get_state(self, key: str) -> str:
         """Получить состояние по определённому ключу.
 
-        Args:        
+        Args:
             key: Ключ.
+
+        Returns:
+            value: Состояние.
         """
         return self.data.get(key)
