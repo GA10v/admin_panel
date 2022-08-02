@@ -10,7 +10,7 @@ def get_log() -> logging.basicConfig:
         logging.basicConfig: Настройки для logging
     """
     log_conf = {
-        'filename': f'{Path(__file__).parent.parent.parent}/logs/load_data_{date.today()}.log',
+        'filename': f'{Path(__file__).parent.parent}/logs/load_data_{date.today()}.log',
         'filemode': 'a',
         'level': logging.INFO,
         'format': '%(asctime)s.%(msecs)03d [%(levelname)s] %(filename)s - %(funcName)s() : %(message)s',
