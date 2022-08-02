@@ -3,14 +3,13 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 PG_MODELS = ['film_work', 'person', 'genre']
 
-ES_INDEX = os.environ.get('ES_INDEX')
+REDIS_KEY = os.environ.get('REDIS_KEY')
 
-# ES_SCHEMA = os.environ.get('ES_SCHEMA_PATH')
+ES_INDEX = os.environ.get('ES_INDEX')
 
 ES_URL = os.environ.get('ES_URL')
 
@@ -30,5 +29,10 @@ DSL_ES = {
     'host': os.environ.get('ES_HOST'),
     'port': os.environ.get('ES_PORT'),
     'index': os.environ.get('ES_INDEX'),
+}
 
+DSL_REDIS = {
+    'host': os.environ.get('REDIS_HOST'),
+    'port': int(os.environ.get('REDIS_PORT')),
+    # 'db': os.environ.get('REDIS_DB'),
 }
