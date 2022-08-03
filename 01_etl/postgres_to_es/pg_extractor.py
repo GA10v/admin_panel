@@ -7,7 +7,8 @@ import psycopg2
 from psycopg2.extensions import connection as _connection
 from psycopg2.extras import DictCursor
 
-from components import constants, log_config, models, sql_queries
+from components import log_config, models, sql_queries
+from components.settings import Settings
 from components.state import State
 from components.utilities import backoff
 
@@ -16,11 +17,11 @@ log_config.get_log()
 
 class PostgresExtractor:
     def __init__(
-        self,
-        dsl: models.DBConf,
-        state_maneger: State,
-        batch_size: int = 100,
-        cursor_factory=DictCursor) -> None:
+            self,
+            dsl: models.DBConf,
+            state_maneger: State,
+            batch_size: int = 100,
+            cursor_factory=DictCursor) -> None:
         """
         Args:
             dsl: Данные для подключения к psql.
@@ -33,7 +34,7 @@ class PostgresExtractor:
         self.state_maneger = state_maneger
         self.batch_size = batch_size
 
-    @backoff()
+    @backoff(logger=log_config.get_log)
     def get_connection(self) -> _connection:
         """
         Реализация отказоустойчивости.
@@ -51,12 +52,9 @@ class PostgresExtractor:
         Yields:
             _connection: Конектор.
         """
-        try:
-            conn = self.get_connection()
-            yield conn
-        # except обрабатывает @backoff() в self.get_connection()
-        finally:
-            conn.close()
+        conn = self.get_connection()
+        yield conn
+        conn.close()
 
     def get_last_update_time(self) -> datetime:
         """
@@ -66,13 +64,13 @@ class PostgresExtractor:
             last_check: Дата последнего обновления данных.
         """
         try:
-            last_check = self.state_maneger.get_state(constants.STATE_KEY)
+            last_check = self.state_maneger.get_state(Settings().state_key)
             return datetime.datetime.strptime(last_check[:-3], '%Y-%m-%d %H:%M:%S.%f')
 
         except (TypeError, ValueError):
             logging.warning('Отсутсвует файл с данными о последнем состоянии')
             last_check = '2021-01-01 00:0:00.000001'
-            self.state_maneger.set_state(key=constants.STATE_KEY, value=last_check)
+            self.state_maneger.set_state(key=Settings().state_key, value=last_check)
             return datetime.datetime.strptime(last_check, '%Y-%m-%d %H:%M:%S.%f')
 
     def get_id(self) -> set:
@@ -83,17 +81,16 @@ class PostgresExtractor:
             result: Множество всех id для таблицы filmwork в которых были внесены изменения.
         """
         ids = []
-        try:
-            for query in sql_queries.get_query(self.get_last_update_time()):
-                with self.get_pg_conn() as connection, connection.cursor() as cursor:
-                    cursor.execute(query)
-                    pg_data = cursor.fetchall()
-                    ids.append((str(item[0]) for item in pg_data))
-            result = set(ids[0])
-            return result
-        except Exception as er:
-            logging.error(er)
 
+        for query in sql_queries.get_query(self.get_last_update_time()):
+            with self.get_pg_conn() as connection, connection.cursor() as cursor:
+                cursor.execute(query)
+                pg_data = cursor.fetchmany(self.batch_size)
+                ids.append((str(item[0]) for item in pg_data))
+        result = set(ids[0])
+        return result
+
+    @backoff(logger=log_config.get_log)
     def get_data(self) -> Generator[list[models.PGDataConf], None, None]:
         """
         Получение данных из PostgreSQL.
@@ -109,7 +106,7 @@ class PostgresExtractor:
                 desc = cursor.description
                 column_names = [col[0] for col in desc]
 
-                while pg_data := [dict(zip(column_names, row)) for row in cursor.fetchmany(self.batch_size)]:
+                while pg_data := [dict(zip(column_names, row)) for row in cursor.fetchall()]:
                     yield pg_data
-        except Exception as er:
-            logging.error(er)
+        except psycopg2.errors.SyntaxError:
+            logging.info('Отсутствуют данные для обновления Elasticsearch')

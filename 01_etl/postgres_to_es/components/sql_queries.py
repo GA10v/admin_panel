@@ -1,7 +1,7 @@
 import datetime
 from typing import Generator
 
-from . import constants
+from .settings import Settings
 
 
 def get_query(last_update_time: datetime) -> Generator[str, None, None]:
@@ -16,7 +16,7 @@ def get_query(last_update_time: datetime) -> Generator[str, None, None]:
     Yields:
         query: Генератор qsl запросов.
     """
-    for table in constants.PG_MODELS:
+    for table in Settings().pg_models:
         query = f"""SELECT
                     content.film_work.id
                     FROM content.film_work

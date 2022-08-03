@@ -1,11 +1,14 @@
 import abc
 import json
+import logging
 from typing import Optional
 
 from redis import Redis
+import redis
 
-from . import constants, models
+from . import models, log_config
 from .utilities import backoff
+from .settings import Settings
 
 
 class BaseStorage:
@@ -59,7 +62,7 @@ class JsonFileStorage(BaseStorage):
 
 
 class RedisStorage(BaseStorage):
-    def __init__(self, dsl: models.RedisConf = constants.DSL_REDIS, key: str = constants.REDIS_KEY):
+    def __init__(self, dsl: models.RedisConf = Settings().dsl_redis, key: str = Settings().redis_key):
         """
         Args:
             dsl: Данные для подключения к Redis.
@@ -69,7 +72,7 @@ class RedisStorage(BaseStorage):
         self.key = key
         self.connection = self.get_connection()
 
-    @backoff()
+    @backoff(logger=log_config.get_log)
     def get_connection(self) -> Redis:
         """Реализация отказоустойчивости.
 
@@ -95,10 +98,7 @@ class RedisStorage(BaseStorage):
         Returns:
             state: Cостояние.
         """
-        try:
-            return self.connection.hgetall(self.key)
-        except Exception:
-            return {}
+        return self.connection.hgetall(self.key)
 
 
 class State:

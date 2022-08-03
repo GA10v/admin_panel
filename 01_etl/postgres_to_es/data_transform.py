@@ -1,6 +1,7 @@
 import json
 
-from components import constants, models
+from components import models
+from components.settings import Settings
 
 
 class DataTransformer:
@@ -51,7 +52,7 @@ class DataTransformer:
         for entry in entries:
             index = {
                 'index': {
-                    '_index': constants.ES_INDEX,
+                    '_index': Settings().es_index,
                     '_id': str(entry.id),
                 },
             }
